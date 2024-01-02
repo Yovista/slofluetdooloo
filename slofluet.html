@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .image-container {
+            margin: 20px 0;
+        }
+
+        /* Updated style for the images without borders */
+        .bottom-image {
+            width: 100%;
+            max-width: 400px; /* Adjust the max-width as needed */
+            height: auto;
+            border: 0; /* Set border to zero */
+            padding: 0; /* Remove any default padding */
+            margin: 0; /* Remove any default margin */
+            display: block; /* Remove any default inline spacing */
+            border-radius: 8px;
+        }
+
+        #notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #333;
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        #muteButton {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+    <title>Dynamic Image Gallery</title>
+</head>
+<body>
+
+<div id="notification">Click the screen to mute/unmute</div>
+
+<div class="container" id="imageGallery">
+    <!-- Images will be dynamically added here -->
+</div>
+
+
+<audio id="fluteAudio" src="flute.mp3"></audio>
+
+<script>
+    // Function to create and append image divs with dynamic class names
+    function createImageDiv(index) {
+        const imageDiv = document.createElement('div');
+        imageDiv.classList.add(`image-container-${index}`);
+        const img = document.createElement('img');
+        img.src = `${index}.png`;
+        img.alt = `Image ${index}`;
+        img.classList.add('bottom-image');
+        imageDiv.appendChild(img);
+        return imageDiv;
+    }
+
+    // Function to generate the gallery with repeated second image based on prices
+    function generateGallery(prices) {
+        const galleryContainer = document.getElementById('imageGallery');
+
+        // Add the first image div
+        galleryContainer.appendChild(createImageDiv(1));
+
+        // Repeat the second image div based on the prices data
+        prices.forEach(price => {
+            const repetitionCount = Math.round(price * 1000); // Adjust this as needed
+            for (let i = 0; i < repetitionCount; i++) {
+                galleryContainer.appendChild(createImageDiv(2));
+            }
+        });
+
+        // Add the third image div
+        galleryContainer.appendChild(createImageDiv(3));
+    }
+
+    // Fetch data from Coingecko API
+    fetch('https://api.coingecko.com/api/v3/coins/smolano/market_chart?vs_currency=usd&days=0&interval=daily')
+        .then(response => response.json())
+        .then(data => {
+            console.log('API Response:', data);
+
+            // Ensure prices property is present and has at least one entry
+            if (data && data.prices && Array.isArray(data.prices) && data.prices.length > 0 && Array.isArray(data.prices[0]) && data.prices[0].length > 1) {
+                const prices = data.prices.map(entry => entry[1]); // Extract the prices array
+                console.log('Prices:', prices); // Print the value of "prices"
+                generateGallery(prices);
+            } else {
+                console.error('Invalid data structure in the API response.');
+            }
+        })
+        .catch(error => console.error('Error fetching data:', error));
+
+    // Get the audio element
+    const fluteAudio = document.getElementById('fluteAudio');
+    const notification = document.getElementById('notification');
+    const muteButton = document.getElementById('muteButton');
+
+    // Function to play the flute sound when scrolling
+    function playFluteOnScroll() {
+        // Check if the audio is not already playing
+        if (fluteAudio.paused) {
+            fluteAudio.play();
+        }
+
+        // Debounce the function to prevent it from firing too often during scroll
+        clearTimeout(window.scrollTimeout);
+        window.scrollTimeout = setTimeout(function () {
+            fluteAudio.pause();
+        }, 200); // Adjust the debounce time as needed
+    }
+
+    // Function to toggle mute/unmute
+    function toggleMute() {
+        fluteAudio.muted = !fluteAudio.muted;
+        muteButton.textContent = fluteAudio.muted ? 'Unmute' : 'Mute';
+        notification.style.display = 'none'; // Hide notification on mute/unmute
+    }
+
+    // Show notification for the first 5 seconds
+    notification.style.display = 'block';
+    setTimeout(() => {
+        notification.style.display = 'none';
+    }, 2000);
+
+    // Attach the onscroll event to play and stop the flute sound during scrolling
+    window.addEventListener('scroll', playFluteOnScroll);
+
+    // Attach click event to mute/unmute button
+    muteButton.addEventListener('click', toggleMute);
+</script>
+
+</body>
+</html>
